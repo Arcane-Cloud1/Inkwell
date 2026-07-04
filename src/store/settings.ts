@@ -11,7 +11,7 @@ type SettingsState = {
   client: GitHubClient | null;
   connecting: boolean;
   load: () => Promise<void>;
-  update: (patch: Partial<Settings>) => Promise<void>;
+  update: (patch: Partial<Settings>) => void;
   connect: (token?: string) => Promise<GitHubUser>;
   disconnect: () => Promise<void>;
   isConfigured: () => boolean;
@@ -41,6 +41,15 @@ async function saveToStorage(settings: Settings) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
 }
 
+// Debounced save: avoids encrypting + writing localStorage on every keystroke
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSave(settings: Settings) {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    void saveToStorage(settings);
+  }, 400);
+}
+
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: { ...DEFAULT_SETTINGS },
   user: null,
@@ -55,13 +64,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     });
   },
 
-  async update(patch) {
-    const next = { ...get().settings, ...patch };
-    await saveToStorage(next);
+  update(patch) {
+    const prev = get().settings;
+    const next = { ...prev, ...patch };
+    // Only recreate client when token actually changes
+    const tokenChanged = patch.token !== undefined && patch.token !== prev.token;
     set({
       settings: next,
-      client: next.token ? createGitHubClient(next.token) : null,
+      ...(tokenChanged
+        ? { client: next.token ? createGitHubClient(next.token) : null }
+        : {}),
     });
+    // Persist in background (debounced) — don't block the UI
+    scheduleSave(next);
   },
 
   async connect(token) {
