@@ -111,7 +111,37 @@ jobs:
           echo "=== build.gradle version info ==="
           grep -E "version(Code|Name)" android/app/build.gradle
 
-      - name: Build Debug APK
+      - name: Prepare release keystore
+        id: keystore
+        run: |
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+            echo "has_keystore=true" >> $GITHUB_OUTPUT
+            echo "Keystore prepared"
+          else
+            echo "has_keystore=false" >> $GITHUB_OUTPUT
+            echo "No keystore secret found, will build debug APK"
+          fi
+
+      - name: Build Release APK (signed)
+        if: steps.keystore.outputs.has_keystore == 'true'
+        working-directory: android
+        env:
+          KEYSTORE_FILE: release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'inkwell2026' }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'inkwell' }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || 'inkwell2026' }}
+        run: |
+          chmod +x gradlew
+          # Add release signing config to build.gradle
+          sed -i '/buildTypes {/a\        release {\n            signingConfig signingConfigs.release\n        }' app/build.gradle
+          # Add signingConfigs
+          sed -i "/defaultConfig {/i\\    signingConfigs {\n        release {\n            storeFile file(\"$KEYSTORE_FILE\")\n            storePassword \"$KEYSTORE_PASSWORD\"\n            keyAlias \"$KEY_ALIAS\"\n            keyPassword \"$KEY_PASSWORD\"\n        }\n    }" app/build.gradle
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/*.apk ../release-android.apk
+
+      - name: Build Debug APK (unsigned fallback)
+        if: steps.keystore.outputs.has_keystore == 'false'
         working-directory: android
         run: |
           chmod +x gradlew
