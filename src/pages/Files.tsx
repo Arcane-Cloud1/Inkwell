@@ -23,7 +23,8 @@ import { useDraftsStore } from "@/store/drafts";
 import { useToastStore } from "@/store/toast";
 import { GitHubError, decodeBase64 } from "@/lib/github";
 import type { GitHubContent } from "@/types";
-import { cn, formatSize, isMarkdown } from "@/lib/utils";
+import { cn, formatSize, isMarkdown, stripMdExt } from "@/lib/utils";
+import { extractTitle } from "@/lib/frontmatter";
 
 export default function Files() {
   const navigate = useNavigate();
@@ -96,8 +97,9 @@ export default function Files() {
         branch: settings.defaultBranch,
       });
       const text = decodeBase64(remote.content);
+      const extractedTitle = extractTitle(text) || stripMdExt(file.name);
       const draft = await createDraft({
-        title: file.name,
+        title: extractedTitle,
         content: text,
         remotePath: file.path,
         remoteSha: remote.sha,

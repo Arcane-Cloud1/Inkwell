@@ -257,3 +257,58 @@ export function buildFrontmatterFromFields(
   lines.push("---");
   return lines.join("\n");
 }
+
+/**
+ * 从文章内容中解析已有的 frontmatter，返回各字段值
+ * 返回的 key 是 YAML 键名，值是字符串形式
+ */
+export function parseExistingFrontmatter(
+  content: string,
+): Record<string, string> | null {
+  const trimmed = content.trimStart();
+  if (!trimmed.startsWith("---")) return null;
+  const idx = trimmed.indexOf("\n---", 3);
+  if (idx === -1) return null;
+
+  const yamlBlock = trimmed.slice(3, idx).trim();
+  const result: Record<string, string> = {};
+  const lines = yamlBlock.split("\n");
+
+  for (const line of lines) {
+    const colonIdx = line.indexOf(":");
+    if (colonIdx === -1) continue;
+    const key = line.slice(0, colonIdx).trim();
+    let value = line.slice(colonIdx + 1).trim();
+    // Remove surrounding quotes
+    if ((value.startsWith("'") && value.endsWith("'")) ||
+        (value.startsWith('"') && value.endsWith('"'))) {
+      value = value.slice(1, -1);
+    }
+    result[key] = value;
+  }
+
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+/**
+ * 从文章内容中提取标题：
+ * 1. 优先从 frontmatter 的 title 字段取
+ * 2. 其次从正文第一个 # 标题取
+ * 3. 否则返回空字符串
+ */
+export function extractTitle(content: string): string {
+  const fm = parseExistingFrontmatter(content);
+  if (fm?.title && fm.title.trim()) {
+    return fm.title.trim();
+  }
+  const stripped = stripExistingFrontmatter(content);
+  const lines = stripped.split("\n");
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith("# ")) {
+      return t.slice(2).trim();
+    }
+    if (t && !t.startsWith("---")) break;
+  }
+  return "";
+}

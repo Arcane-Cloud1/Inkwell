@@ -10,6 +10,7 @@ import { type GitHubClient, ensureMdExtension, joinPath } from "@/lib/github";
 import {
   parseFrontmatterTemplate,
   buildFrontmatterFromFields,
+  parseExistingFrontmatter,
   type FrontmatterField,
 } from "@/lib/frontmatter";
 import { cn } from "@/lib/utils";
@@ -92,12 +93,18 @@ export default function PublishDrawer({
       );
       if (settings.frontmatterEnabled && settings.frontmatterTemplate) {
         const fields = parseFrontmatterTemplate(settings.frontmatterTemplate);
+        const existing = parseExistingFrontmatter(content) ?? {};
         const initValues: Record<string, string> = {};
         const initEnabled: Record<string, boolean> = {};
+        const hasExisting = Object.keys(existing).length > 0;
+
         for (const field of fields) {
           if (field.hasVariable && field.variable) {
             initEnabled[field.key] = true;
-            if (field.variable === "title") {
+            const existingValue = existing[field.key];
+            if (existingValue !== undefined && existingValue !== null) {
+              initValues[field.variable] = existingValue;
+            } else if (field.variable === "title") {
               initValues[field.variable] = title;
             } else if (field.variable === "date") {
               initValues[field.variable] = new Date().toISOString().slice(0, 10);
@@ -107,14 +114,21 @@ export default function PublishDrawer({
               initValues[field.variable] = "";
             }
           } else {
-            initEnabled[field.key] = false;
-            initValues[field.key] = field.staticValue ?? "";
+            const existingValue = existing[field.key];
+            if (existingValue !== undefined && existingValue !== null) {
+              // Field exists in content's frontmatter -> enable and fill
+              initEnabled[field.key] = true;
+              initValues[field.key] = existingValue;
+            } else {
+              initEnabled[field.key] = false;
+              initValues[field.key] = field.staticValue ?? "";
+            }
           }
         }
         const titleField = fields.find((f) => f.key === "title");
         if (titleField) {
           initEnabled["title"] = true;
-          if (titleField.variable) {
+          if (titleField.variable && !initValues[titleField.variable]) {
             initValues[titleField.variable] = title;
           }
         }
