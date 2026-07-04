@@ -127,6 +127,16 @@ export default function PublishDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  useEffect(() => {
+    if (open && settings.frontmatterEnabled) {
+      const titleField = fmFields.find((f) => f.key === "title");
+      if (titleField?.variable) {
+        setFmValues((prev) => ({ ...prev, [titleField.variable!]: title }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title]);
+
   function updateFmValue(key: string, value: string) {
     setFmValues((prev) => ({ ...prev, [key]: value }));
   }
@@ -418,10 +428,11 @@ export default function PublishDrawer({
                             <input
                               value={value}
                               onChange={(e) => updateFmValue(valueKey, e.target.value)}
-                              disabled={publishing || !isEnabled}
+                              disabled={publishing || !isEnabled || isTitle}
                               placeholder={field.placeholder}
                               className={cn(
                                 "input-field font-mono text-sm",
+                                isTitle && "opacity-60",
                               )}
                             />
                           )}
