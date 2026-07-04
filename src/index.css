@@ -1,0 +1,288 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Newsreader", Georgia, serif;
+  line-height: 1.6;
+  font-weight: 400;
+  color-scheme: dark;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #14110f;
+  background-image:
+    radial-gradient(110% 70% at 50% -12%, rgba(232, 163, 61, 0.10) 0%, rgba(232, 163, 61, 0) 55%),
+    radial-gradient(80% 60% at 110% 10%, rgba(201, 105, 78, 0.06) 0%, rgba(201, 105, 78, 0) 60%),
+    linear-gradient(180deg, #14110f 0%, #100d0a 100%);
+  background-attachment: fixed;
+  color: #f2ebe0;
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* 纸张噪点纹理 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: overlay;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(232, 163, 61, 0.18);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 163, 61, 0.32);
+}
+
+/* 输入框聚焦去除蓝色外框 */
+input,
+textarea,
+button {
+  font-family: inherit;
+}
+textarea {
+  resize: none;
+}
+
+@layer components {
+  .glass {
+    @apply bg-ink-800/60 backdrop-blur-xl border border-amber-300/10;
+  }
+  .card {
+    @apply bg-ink-850/70 border border-amber-300/10 rounded-2xl shadow-card backdrop-blur-sm;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-amber-300 text-ink-950 font-medium tracking-wide shadow-glow transition-all duration-200 active:scale-[0.97] hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-amber-300/20 text-paper transition-all duration-200 active:scale-[0.97] hover:border-amber-300/50 hover:bg-amber-300/5 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl bg-ink-900/70 border border-amber-300/10 text-paper placeholder:text-paper-faint focus:outline-none focus:border-amber-300/40 focus:bg-ink-900 transition-colors;
+  }
+  .label-text {
+    @apply text-xs font-mono uppercase tracking-[0.18em] text-paper-dim;
+  }
+}
+
+/* react-markdown 预览排版 */
+.prose-ink {
+  color: #f2ebe0;
+  font-family: "Newsreader", Georgia, serif;
+  line-height: 1.75;
+  font-size: 1.0625rem;
+}
+.prose-ink h1,
+.prose-ink h2,
+.prose-ink h3,
+.prose-ink h4 {
+  font-family: "Fraunces", Georgia, serif;
+  color: #f6e2ba;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 1.6em;
+  margin-bottom: 0.6em;
+  letter-spacing: -0.01em;
+}
+.prose-ink h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(232, 163, 61, 0.18);
+  padding-bottom: 0.3em;
+}
+.prose-ink h2 {
+  font-size: 1.5rem;
+}
+.prose-ink h3 {
+  font-size: 1.2rem;
+}
+.prose-ink p {
+  margin: 0.9em 0;
+}
+.prose-ink a {
+  color: #e8a33d;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(232, 163, 61, 0.4);
+}
+.prose-ink a:hover {
+  text-decoration-color: #e8a33d;
+}
+.prose-ink strong {
+  color: #fbf1dc;
+  font-weight: 600;
+}
+.prose-ink em {
+  color: #f6e2ba;
+  font-style: italic;
+}
+.prose-ink ul,
+.prose-ink ol {
+  margin: 0.9em 0;
+  padding-left: 1.4em;
+}
+.prose-ink ul {
+  list-style: none;
+}
+.prose-ink ul li {
+  position: relative;
+  padding-left: 0.4em;
+}
+.prose-ink ul li::before {
+  content: "—";
+  position: absolute;
+  left: -1.2em;
+  color: #e8a33d;
+  font-weight: 600;
+}
+.prose-ink ol {
+  list-style: decimal;
+}
+.prose-ink ol li::marker {
+  color: #e8a33d;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85em;
+}
+.prose-ink blockquote {
+  margin: 1.2em 0;
+  padding: 0.6em 1.1em;
+  border-left: 3px solid #e8a33d;
+  background: rgba(232, 163, 61, 0.06);
+  border-radius: 0 10px 10px 0;
+  color: #c9bfb0;
+  font-style: italic;
+}
+.prose-ink code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85em;
+  background: rgba(232, 163, 61, 0.12);
+  color: #f6e2ba;
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+}
+.prose-ink pre {
+  margin: 1.1em 0;
+  padding: 1em 1.1em;
+  background: #100d0a;
+  border: 1px solid rgba(232, 163, 61, 0.14);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+.prose-ink pre code {
+  background: transparent;
+  color: #f2ebe0;
+  padding: 0;
+  font-size: 0.82em;
+  line-height: 1.6;
+}
+.prose-ink hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 163, 61, 0.3), transparent);
+  margin: 2em 0;
+}
+.prose-ink img {
+  max-width: 100%;
+  border-radius: 12px;
+  margin: 1.2em 0;
+}
+.prose-ink table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 0.9em;
+}
+.prose-ink th,
+.prose-ink td {
+  border: 1px solid rgba(232, 163, 61, 0.16);
+  padding: 0.55em 0.8em;
+  text-align: left;
+}
+.prose-ink th {
+  background: rgba(232, 163, 61, 0.08);
+  font-family: "Fraunces", Georgia, serif;
+  color: #f6e2ba;
+}
+
+/* highlight.js 极简暖色主题（覆盖默认） */
+.hljs {
+  color: #f2ebe0;
+  background: transparent;
+}
+.hljs-keyword,
+.hljs-built_in,
+.hljs-type {
+  color: #e8a33d;
+}
+.hljs-string,
+.hljs-attr {
+  color: #b5d49a;
+}
+.hljs-number,
+.hljs-literal {
+  color: #efcb86;
+}
+.hljs-comment {
+  color: #6e6557;
+  font-style: italic;
+}
+.hljs-title,
+.hljs-function .hljs-title,
+.hljs-section {
+  color: #f6e2ba;
+}
+.hljs-variable,
+.hljs-params {
+  color: #f2ebe0;
+}
+.hljs-tag,
+.hljs-name {
+  color: #d98c24;
+}
+.hljs-attribute {
+  color: #efcb86;
+}
+
+/* 隐藏滚动条但保留滚动（工具栏横向滚动） */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
