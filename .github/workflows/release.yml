@@ -132,19 +132,15 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          # Move EXE files
-          if [ -f artifacts/windows-exe/*.exe ]; then
-            mv artifacts/windows-exe/*.exe release-assets/
-          fi
+          # Move EXE files (handle spaces in filenames)
+          find artifacts/windows-exe -name "*.exe" -exec cp {} release-assets/ \; 2>/dev/null || true
+          find artifacts/windows-exe -name "*.msi" -exec cp {} release-assets/ \; 2>/dev/null || true
           # Move APK file
-          if [ -f artifacts/android-apk/*.apk ]; then
-            mv artifacts/android-apk/*.apk release-assets/Inkwell.apk
-          fi
+          find artifacts/android-apk -name "*.apk" -exec cp {} release-assets/Inkwell.apk \; 2>/dev/null || true
           # Move source zip
-          if [ -f artifacts/source-code/*.zip ]; then
-            mv artifacts/source-code/*.zip release-assets/
-          fi
+          find artifacts/source-code -name "*.zip" -exec cp {} release-assets/ \; 2>/dev/null || true
           # List files
+          echo "=== Release Assets ==="
           ls -la release-assets/
 
       - name: Create Release
