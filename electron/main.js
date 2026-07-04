@@ -1,8 +1,7 @@
-import { app, BrowserWindow, Menu, shell, ipcMain } from "electron";
-import path from "path";
-import isDev from "electron-is-dev";
+const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
+const path = require("path");
 
-let mainWindow: BrowserWindow | null;
+let mainWindow = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -19,7 +18,7 @@ function createWindow() {
     },
   });
 
-  if (isDev) {
+  if (!app.isPackaged) {
     mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools();
   } else {
@@ -40,7 +39,7 @@ function createWindow() {
   });
 }
 
-const template: MenuItemConstructorOptions[] = [
+const template = [
   {
     label: app.name,
     submenu: [
@@ -98,7 +97,7 @@ const template: MenuItemConstructorOptions[] = [
     submenu: [
       {
         label: "访问 GitHub",
-        click: () => shell.openExternal("https://github.com/Arcane-Cloud1/Blog-Post-Push"),
+        click: () => shell.openExternal("https://github.com/Arcane-Cloud1/Inkwell"),
       },
     ],
   },
