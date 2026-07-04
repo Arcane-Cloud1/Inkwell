@@ -1,0 +1,181 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm build
+
+      - name: Build Electron EXE
+        run: pnpm electron:build
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: |
+            release/*.exe
+            release/*.msi
+          retention-days: 1
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm build
+
+      - name: Initialize Capacitor
+        run: pnpm capacitor:init --web-dir dist --app-id com.inkwell.app --app-name Inkwell || true
+
+      - name: Add Android platform
+        run: pnpm capacitor:add android || true
+
+      - name: Sync Capacitor
+        run: pnpm capacitor:sync
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Sign APK (debug)
+        working-directory: android
+        run: |
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/*.apk ../release-android.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: release-android.apk
+          retention-days: 1
+
+  build-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create source archive
+        run: |
+          zip -r inkwell-source.zip . \
+            -x "node_modules/*" \
+            -x ".pnpm-store/*" \
+            -x ".git/*" \
+            -x ".trae/*" \
+            -x "dist/*" \
+            -x "release/*" \
+            -x "android/*" \
+            -x "ios/*" \
+            -x "*.log"
+
+      - name: Upload source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-code
+          path: inkwell-source.zip
+          retention-days: 1
+
+  release:
+    needs: [build-windows, build-android, build-source]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          # Move EXE files
+          if [ -f artifacts/windows-exe/*.exe ]; then
+            mv artifacts/windows-exe/*.exe release-assets/
+          fi
+          # Move APK file
+          if [ -f artifacts/android-apk/*.apk ]; then
+            mv artifacts/android-apk/*.apk release-assets/Inkwell.apk
+          fi
+          # Move source zip
+          if [ -f artifacts/source-code/*.zip ]; then
+            mv artifacts/source-code/*.zip release-assets/
+          fi
+          # List files
+          ls -la release-assets/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          generate_release_notes: true
+          body: |
+            ## 📦 Inkwell Release
+            
+            ### 下载内容
+            
+            | 文件 | 说明 |
+            |------|------|
+            | `Inkwell Setup *.exe` | Windows 安装包 |
+            | `Inkwell *.exe` | Windows 便携版 |
+            | `Inkwell.apk` | Android 安装包 |
+            | `inkwell-source.zip` | 源码压缩包 |
+            
+            ### 使用方式
+            
+            **Windows**: 双击 EXE 安装或运行便携版
+            
+            **Android**: 传输 APK 到手机，点击安装（需开启"允许未知来源"）
+            
+            **源码**: 解压后执行 `pnpm install && pnpm dev`
