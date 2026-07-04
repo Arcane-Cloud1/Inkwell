@@ -74,24 +74,16 @@ jobs:
       - name: Build web app
         run: pnpm build
 
-      - name: Initialize Capacitor
-        run: pnpm capacitor:init --web-dir dist --app-id com.inkwell.app --app-name Inkwell || true
-
       - name: Add Android platform
-        run: pnpm capacitor:add android || true
+        run: npx cap add android
 
       - name: Sync Capacitor
-        run: pnpm capacitor:sync
+        run: npx cap sync
 
-      - name: Build APK
+      - name: Build Debug APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
-
-      - name: Sign APK (debug)
-        working-directory: android
-        run: |
           ./gradlew assembleDebug --no-daemon
           cp app/build/outputs/apk/debug/*.apk ../release-android.apk
 
